@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Socioeconomic Marginalization in Mexico | Liam Galleher</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <script src="https://colorbrewer2.org/export/colorbrewer.js"></script>
+    <script src="marginalization.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom, #f4f1e8, #e6ecd9);
+            color: #1f2c1f;
+            line-height: 1.6;
+        }
+
+        .page-shell {
+            width: 100%;
+        }
+
+        .project-header {
+            position: relative;
+            padding: 32px 60px 28px 60px;
+            background:
+                radial-gradient(circle at top left, rgba(118, 140, 108, 0.08), transparent 38%),
+                linear-gradient(to bottom, #f4f1e8, #eef2e7);
+            overflow: hidden;
+        }
+
+        .project-header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("https://www.transparenttextures.com/patterns/cartographer.png");
+            background-repeat: repeat;
+            opacity: 0.22;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .project-header-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .project-kicker {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.85rem;
+            color: #5f7556;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .project-title {
+            font-size: clamp(1rem, 3.5vw, 3rem);
+            line-height: 0.96;
+            letter-spacing: -0.05em;
+            color: #223122;
+            margin-bottom: 18px;
+            max-width: 980px;
+        }
+
+        .project-subtitle {
+            font-size: 1.08rem;
+            color: #425242;
+            max-width: 860px;
+            line-height: 1.8;
+        }
+
+        .project-content {
+            padding: 42px 60px 70px 60px;
+        }
+
+        .project-content-inner {
+            max-width: 1500px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.45fr);
+            gap: 28px;
+            align-items: start;
+        }
+
+        .map-panel {
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92), rgba(247, 244, 236, 0.97));
+            border: 1px solid rgba(80, 98, 70, 0.12);
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(35, 50, 35, 0.10);
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .control-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .control-label {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.75rem;
+            color: #6f8664;
+            font-weight: 700;
+        }
+
+        .map-select {
+            width: 100%;
+            padding: 13px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(80, 98, 70, 0.14);
+            background: rgba(255, 255, 255, 0.9);
+            color: #233223;
+            font-size: 0.98rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .map-return {
+    margin-top: 10px;
+        }
+
+        .return-btn {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            padding: 14px 16px;
+            border-radius: 14px;
+
+            background: linear-gradient(to right, #5f7556, #6f8664);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 16px rgba(35, 50, 35, 0.15);
+        }
+
+        .return-btn:hover {
+            background: linear-gradient(to right, #6f8664, #7f9772);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(35, 50, 35, 0.2);
+        }
+
+        .map-select:focus {
+            border-color: rgba(80, 98, 70, 0.32);
+            box-shadow: 0 0 0 4px rgba(95, 117, 86, 0.08);
+        }
+
+        #map {
+            width: 100%;
+            height: 760px;
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .side-panel {
+            display: grid;
+            gap: 22px;
+        }
+
+        .info-card,
+        .legend-card {
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.93), rgba(247, 244, 236, 0.97));
+            border: 1px solid rgba(80, 98, 70, 0.12);
+            border-radius: 22px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-label {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.76rem;
+            color: #6f8664;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .info-card h3,
+        .legend-card h3 {
+            font-size: 1.3rem;
+            line-height: 1.2;
+            margin-bottom: 10px;
+            color: #233223;
+        }
+
+        .info-card p,
+        .legend-card p {
+            color: #425242;
+            line-height: 1.75;
+            font-size: 0.98rem;
+        }
+
+        .legend-list {
+            margin-top: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .legend-caption {
+            color: #334133;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .map-note {
+            margin-top: 14px;
+            font-size: 0.92rem;
+            color: #5b6a59;
+        }
+
+        .leaflet-tooltip {
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(80, 98, 70, 0.15);
+            color: #233223;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.10);
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .leaflet-container a {
+            color: #355132;
+        }
+
+        .leaflet-control-container .leaflet-bottom.leaflet-left {
+            display: none;
+        }
+
+        @media (max-width: 1100px) {
+            .project-content-inner {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                height: 640px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .project-header,
+            .project-content {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .project-title {
+                font-size: clamp(2.2rem, 10vw, 3.2rem);
+                line-height: 0.98;
+            }
+
+            .control-row {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                height: 520px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+
+        <header class="project-header">
+            <div class="project-header-inner">
+                <p class="project-kicker">Interactive Web Map</p>
+                <h1 class="project-title">Socioeconomic Marginalization in Mexico</h1>
+                <p class="project-subtitle">
+                    A state-level choropleth map exploring indicators of marginalization in Mexico in 2020,
+                    including literacy and housing characteristics such as electricity, water, sewage, and flooring conditions.
+                </p>
+            </div>
+        </header>
+
+        <main class="project-content">
+            <div class="project-content-inner">
+
+                <section class="map-panel">
+                    <div class="control-row">
+                        <div class="control-group">
+                            <label for="select-variable" class="control-label">Data variable</label>
+                            <select id="select-variable" class="map-select" onchange="drawMap()">
+                                <option value="illiteracy">Illiteracy (%)</option>
+                                <option value="without_sewage">Homes Without Sewage (%)</option>
+                                <option value="without_electricity">Homes Without Electricity (%)</option>
+                                <option value="earth_floor">Homes With an Earth Floor (%)</option>
+                                <option value="without_water_utility">Homes Without Water Service (%)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="select-color" class="control-label">Color ramp</label>
+                            <select id="select-color" class="map-select" onchange="drawMap()">
+                                <option value="YlGnBu">Yellow · Green · Blue</option>
+                                <option value="RdPu">Red · Purple</option>
+                                <option value="YlOrRd">Yellow · Orange · Red</option>
+                                <option value="Blues">Blues</option>
+                                <option value="Reds">Reds</option>
+                                <option value="Greens">Greens</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="map"></div>
+                </section>
+
+                <aside class="side-panel">
+                    <div class="info-card">
+                        <p class="card-label">About the map</p>
+                        <h3>State-level marginalization indicators</h3>
+                        <p>
+                            Use the controls to switch between different indicators of marginalization
+                            and compare how patterns vary across Mexico. Hover over any state to see
+                            values for all mapped variables.
+                        </p>
+                    </div>
+
+                    <div class="legend-card">
+                        <p class="card-label">Legend</p>
+                        <h3 id="legend-title-display">Illiteracy (%)</h3>
+                        <div id="legend-rows" class="legend-list"></div>
+                        <p class="map-note">
+                            Darker or more intense colors indicate higher values for the selected variable.
+                        </p>
+                    </div>
+                        <div class="map-return">
+                        <a href="portfolio.html" class="return-btn">← Return to Portfolio</a>
+                    </div>
+                </aside>
+
+            </div>
+        </main>
+
+    </div>
+
+    <script type="text/javascript">
+        function fillColor(v) {
+            let colorSelect = document.getElementById("select-color");
+            let colorScheme = colorSelect.options[colorSelect.selectedIndex].value;
+            if (v >= 10) return colorbrewer[colorScheme][6][5];
+            else if (v >= 7.5) return colorbrewer[colorScheme][6][4];
+            else if (v >= 5) return colorbrewer[colorScheme][6][3];
+            else if (v >= 2.5) return colorbrewer[colorScheme][6][2];
+            else if (v >= 1) return colorbrewer[colorScheme][6][1];
+            else return colorbrewer[colorScheme][6][0];
+        }
+
+        let dataLayer = null;
+
+        let map = L.map('map').setView([24, -101], 5);
+
+        let basemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        function drawMap() {
+            let colorSelect = document.getElementById("select-color");
+            let colorScheme = colorSelect.options[colorSelect.selectedIndex].value;
+
+            let variableSelect = document.getElementById("select-variable");
+            let selectedVariable = variableSelect.options[variableSelect.selectedIndex].value;
+            let selectedVariableText = variableSelect.options[variableSelect.selectedIndex].text;
+
+            if (dataLayer != null) map.removeLayer(dataLayer);
+
+            dataLayer = L.geoJSON(states, {
+                style: function(feature) {
+                    return {
+                        fillColor: fillColor(feature.properties[selectedVariable]),
+                        color: fillColor(feature.properties[selectedVariable]),
+                        weight: 1,
+                        fillOpacity: 0.78
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    let tooltipContent = `
+                        <strong>${feature.properties.state}</strong><hr style="margin: 6px 0;"/>
+                        Illiteracy: ${feature.properties.illiteracy.toFixed(2)}%<br/>
+                        Without Electricity: ${feature.properties.without_electricity.toFixed(2)}%<br/>
+                        Without Water: ${feature.properties.without_water_utility.toFixed(2)}%<br/>
+                        Without Sewage: ${feature.properties.without_sewage.toFixed(2)}%<br/>
+                        With Earth Floor: ${feature.properties.earth_floor.toFixed(2)}%<br/>
+                    `;
+                    layer.bindTooltip(tooltipContent);
+                }
+            }).addTo(map);
+
+            document.getElementById("legend-title-display").innerHTML = selectedVariableText;
+
+            let legendItems = '';
+            let legendLabels = ["≤ 1%", "1% – 2.5%", "2.5% – 5%", "5% – 7.5%", "7.5% – 10%", "≥ 10%"];
+
+            for (let i = 0; i <= 5; i++) {
+                legendItems += `
+                    <div class="legend-row">
+                        <div class="legend-color" style="background-color: ${colorbrewer[colorScheme][6][i]};"></div>
+                        <div class="legend-caption">${legendLabels[i]}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById("legend-rows").innerHTML = legendItems;
+        }
+
+        drawMap();
+    </script>
+</body>
+</html>
